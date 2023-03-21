@@ -68,19 +68,42 @@ myWorld.add_set_listener( set_listener )
         
 @app.route('/')
 def hello():
-    '''Return something coherent here.. perhaps redirect to /static/index.html '''
-    return None
+    #redirect to /static/index.html
+    return flask.redirect('/static/index.html')
 
 def read_ws(ws,client):
-    '''A greenlet function that reads from the websocket and updates the world'''
-    # XXX: TODO IMPLEMENT ME
+    # A greenlet function that reads from the websocket and updates the world'''
+    # https://stackoverflow.com/questions/43941507/constantly-update-data-from-a-server-and-print-to-a-text-box
+    # https://stackoverflow.com/a/43942726
+    # https://stackoverflow.com/users/7947318/gardener85
+    # will keep listening for updates
+    while not ws.closed:
+        message = ws.receive()
+        # loads information if its not empty
+        if message:
+            data = json.loads(message)
+            # update world object with received data
+            for entity, values in data.items():
+                for key, value in values.items():
+                    myWorld.update(entity, key, value)
+        else:
+            break
     return None
 
 @sockets.route('/subscribe')
 def subscribe_socket(ws):
     '''Fufill the websocket URL of /subscribe, every update notify the
        websocket and read updates from the websocket '''
-    # XXX: TODO IMPLEMENT ME
+    # add the new WebSocket connection to a set of connections
+    myWorld.add_set_listener(lambda entity, data: ws.send(json.dumps({entity: data})))
+
+    # create a greenlet to listen for updates from the WebSocket
+    g = gevent.spawn(read_ws, ws, request.environ['REMOTE_ADDR'])
+
+    # keep the WebSocket connection open by returning None
+    while not ws.closed:
+        gevent.sleep(0.1)
+    gevent.kill(g)
     return None
 
 
@@ -99,23 +122,26 @@ def flask_post_json():
 @app.route("/entity/<entity>", methods=['POST','PUT'])
 def update(entity):
     '''update the entities via this interface'''
-    return None
+    data = request.get_json()
+    for key, value in data.items():
+        myWorld.update(entity, key, value)
+    return json.dumps(myWorld.get(entity))
 
 @app.route("/world", methods=['POST','GET'])    
 def world():
     '''you should probably return the world here'''
-    return None
+    return json.dumps(myWorld.world())
 
 @app.route("/entity/<entity>")    
 def get_entity(entity):
     '''This is the GET version of the entity interface, return a representation of the entity'''
-    return None
+    return json.dumps(myWorld.get(entity))
 
 
 @app.route("/clear", methods=['POST','GET'])
 def clear():
-    '''Clear the world out!'''
-    return None
+    myWorld.clear()
+    return json.dumps(myWorld.world())
 
 
 
