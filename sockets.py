@@ -61,8 +61,11 @@ class World:
 
 myWorld = World()        
 
+
 def set_listener( entity, data ):
     ''' do something with the update ! '''
+    print(f"Received update for entity '{entity}': {data}")
+
 
 myWorld.add_set_listener( set_listener )
         
@@ -82,7 +85,7 @@ def read_ws(ws,client):
         # loads information if its not empty
         if message:
             data = json.loads(message)
-            # update world object with received data
+            # update world object with received data iteratively
             for entity, values in data.items():
                 for key, value in values.items():
                     myWorld.update(entity, key, value)
@@ -118,6 +121,8 @@ def flask_post_json():
         return json.loads(request.data.decode("utf8"))
     else:
         return json.loads(request.form.keys()[0])
+    
+    
 
 @app.route("/entity/<entity>", methods=['POST','PUT'])
 def update(entity):
@@ -151,4 +156,4 @@ if __name__ == "__main__":
         and run
         gunicorn -k flask_sockets.worker sockets:app
     '''
-    app.run()
+    os.system("gunicorn -k flask_sockets.worker sockets:app")
