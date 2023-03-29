@@ -6,7 +6,7 @@
     <meta content='width=device-width; height=device-height; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
     <meta name="viewport" content="width=device-width" />
     <meta name="license" content="
-        Copyright 2013 Google, Abram Hindle
+        Copyright 2013 Google, Abram Hindle, Jeff Wang (Edited)
         
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -263,7 +263,13 @@ function wsSetup() {
     var url = "ws://"+host+"/subscribe";   
     socket = new WebSocket(url);
     socket.onopen = function() {
-        //XXX: TODO What are you going to do here?
+        getJSON('/world', function(response){
+            json = JSON.parse(response);
+            for (x in json){
+                world[item] = json[item];
+                drawNextFrame();
+            }
+        })
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
@@ -284,7 +290,7 @@ wsSetup();
 
 
 // 30 frames per second
-setInterval( update, 1000/30.0);
+setInterval( update, 1000);
 
 
     </script>
