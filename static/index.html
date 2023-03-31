@@ -36,6 +36,38 @@ var H = canvas.height = window.innerHeight-50;
 var wscounter = 0;
 var socket;
 
+// https://github.com/yuchieh8968/CMPUT404-assignment-ajax/blob/master/static/index.html
+function sendJSONXMLHTTPRequest(url, objects, callback, method) {
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState==4) {
+            try {
+                if(method == "GET"){
+                    xhr.open('GET', url)
+                }
+                if (xhr.status==200) {
+                    if (objects != null){
+                        //parse some JSON from the request!
+                        var response = JSON.parse(xhr.responseText);
+                        //Pass the data to the callback!
+                        callback(response);
+                        xhr.open('PUT', url);
+                    }
+                }
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('Accept', 'application/json');
+                xhr.send(JSON.stringify(objects));
+                xhr.send();
+            } 
+            catch(e) {
+                alert('Error: ' + e.name);
+            }
+        }
+    }
+}
+
+
+
 function debug(str) {
     var debugDiv = document.getElementById('debug');
     debugDiv.innerHTML = "" + str;
@@ -71,9 +103,9 @@ function prepEntity(entity) {
 
 function clearFrame() {
     with(context) {
-	moveTo(0,0);
-	fillStyle = "#000";
-	fillRect(0,0,W,H);
+    moveTo(0,0);
+    fillStyle = "#000";
+    fillRect(0,0,W,H);
     }
 
 }
@@ -106,34 +138,28 @@ function drawFrame() {
 // So use this code, it works well on multitouch devices as well.
 
 function getPosition(e) {
-	if ( e.targetTouches && e.targetTouches.length > 0) {
-		var touch = e.targetTouches[0];
-		var x = touch.pageX  - canvas.offsetLeft;
-		var y = touch.pageY  - canvas.offsetTop;
-		return [x,y];
-	} else {
-		var rect = e.target.getBoundingClientRect();
-		var x = e.offsetX || e.pageX - rect.left - window.scrollX;
-		var y = e.offsetY || e.pageY - rect.top  - window.scrollY;
-		var x = e.pageX  - canvas.offsetLeft;
-		var y = e.pageY  - canvas.offsetTop;
-		return [x,y];
-	}
+    if ( e.targetTouches && e.targetTouches.length > 0) {
+        var touch = e.targetTouches[0];
+        var x = touch.pageX  - canvas.offsetLeft;
+        var y = touch.pageY  - canvas.offsetTop;
+        return [x,y];
+    } else {
+        var rect = e.target.getBoundingClientRect();
+        var x = e.offsetX || e.pageX - rect.left - window.scrollX;
+        var y = e.offsetY || e.pageY - rect.top  - window.scrollY;
+        var x = e.pageX  - canvas.offsetLeft;
+        var y = e.pageY  - canvas.offsetTop;
+        return [x,y];
+    }
 }
 
 function addEntity(entity, data) {
     world[entity] = data;
     drawNextFrame(); // (but should we?)
-    // Send a HTTP Request that updates the entity you just modified!
-    const xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-        if (this.readyState === 4 && this.status === 200) {
-            console.log(`Entity ${entity} updated successfully!`);
-        }
-    };
-    xhttp.open("PUT", `/update/${entity}`, true);
-    xhttp.setRequestHeader("Content-Type", "application/json");
-    xhttp.send(JSON.stringify(data));
+    // xxx Send a HTTP Request that updates the entity you just modified!
+    let newData = {}
+    newData[entity]=data
+    socket.send(JSON.stringify(newData))
 }
 
 var counter = 0;
@@ -178,7 +204,7 @@ mouse = (function() {
                 var pos = getPosition(e);
                 var x = pos[0];
                 var y = pos[1];
-	        self.clicked = 1;
+            self.clicked = 1;
                 self.callListeners(self.mousedowners,x,y,self.clicked,e);
                 //addEntityWithoutName({'x':x,'y':y,'colour':'red'});
             }
@@ -190,8 +216,8 @@ mouse = (function() {
                 var pos = getPosition(e);
                 var x = pos[0];
                 var y = pos[1];
-	        //self.poppin(x,y);
-	        self.clicked = 0;
+            //self.poppin(x,y);
+            self.clicked = 0;
                 self.selected = -1;
                 self.callListeners(self.mouseuppers,x,y,self.clicked,e);
                 //addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
@@ -201,30 +227,30 @@ mouse = (function() {
             self.lasttouch = e;                                         
             return self.mousedown(e);
         },
-	touchend: function(e) {
+    touchend: function(e) {
             var touch = (self.lasttouch)?self.lasttouch:e;
             return self.mouseup(touch);
-	},
-	mousemove: function(e) {
+    },
+    mousemove: function(e) {
             e.preventDefault();
             if (self.wasClicked(e)) {
                 var pos = getPosition(e);
                 var x = pos[0];
                 var y = pos[1];
-	        if (self.clicked != 0) {
-	            //self.squeakin(x,y);
+            if (self.clicked != 0) {
+                //self.squeakin(x,y);
                     self.callListeners(self.mousedraggers,x,y,self.clicked,e);
-	        }
+            }
                 self.callListeners(self.mousemovers,x,y,self.clicked,e);
             }            
-	},
-	touchmove: function(e) {
+    },
+    touchmove: function(e) {
             self.lasttouch = e;                                         
             return self.mousemove(e);
-	},
-		                                   
+    },
+                                           
         // Install the mouse listeners
-	mouseinstall: function() {
+    mouseinstall: function() {
             canvas.addEventListener("mousedown",  self.mousedown, false);
             canvas.addEventListener("mousemove",  self.mousemove, false);
             canvas.addEventListener("mouseup",    self.mouseup, false);
@@ -232,7 +258,7 @@ mouse = (function() {
             canvas.addEventListener("touchstart", self.touchstart, false);
             canvas.addEventListener("touchmove",  self.touchmove, false);
             canvas.addEventListener("touchend",   self.touchend, false);
-	}
+    }
     };
     self.mouseinstall();
     return self;
@@ -263,21 +289,31 @@ function wsSetup() {
     var url = "ws://"+host+"/subscribe";   
     socket = new WebSocket(url);
     socket.onopen = function() {
-        getJSON('/world', function(response){
-            json = JSON.parse(response);
-            for (x in json){
-                world[item] = json[item];
-                drawNextFrame();
+        // sending requeset to get the world 
+        sendJSONXMLHTTPRequest(
+            "http://" + host + '/world',
+            {
+                'accept': 'application/json',
+                'method': 'GET',
+                'data': world
+            },
+            (data) => {
+                world = data
+                drawNextFrame()
             }
-        })
+        )
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
     };
     socket.onmessage = function(msg) {  
         try {
-            debug("WebSocket Recv:" + msg.data);
-            //XXX: TODO What are you going to do here?            
+            // debug("WebSocket Recv:" + msg.data);
+            //XXX: TODO What are you going to do here?     
+            let data = JSON.parse(msg.data)
+            key = Object.keys(data)[0]
+            world[key] = data[key]
+            drawNextFrame()       
         } catch (e) {
             alert("socket on message: " + e);
         }
@@ -290,7 +326,7 @@ wsSetup();
 
 
 // 30 frames per second
-setInterval( update, 1000);
+setInterval( update, 1000/30.0);
 
 
     </script>
