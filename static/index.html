@@ -275,8 +275,12 @@ mouse.mouseuppers.push(function(x,y,clicked,e) {
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
-                          'radius':10});
+    var colorArray = ['yellow','white','pink','purple','orange','brown','blue'];
+    for (var i = 0; i < colorArray.length; i++){
+        var randomIndex = Math.floor(Math.random() * colorArray.length);
+        var randomColor = colorArray[randomIndex];
+        addEntityWithoutName({'x':x,'y':y,'colour':randomColor,'radius':i});
+    };
 });
 
 
